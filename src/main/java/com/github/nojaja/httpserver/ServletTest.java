@@ -11,6 +11,9 @@ public class ServletTest extends HttpServlet {
 
 	private static String workspace = "";
 	{
+		/*
+		 * 環境変数workspaceからルートフォルダを取得する
+		 */
 		workspace = System.getenv("workspace");
 		System.out.println(workspace);
 		workspace = "D:\\devs\\workspace_node\\node-htmlcompiler\\tests\\react";
@@ -20,24 +23,41 @@ public class ServletTest extends HttpServlet {
 	 */
 	private static final long serialVersionUID = 1L;
 
+	/**
+	 * すべてのメソッドを許可する
+	 */
 	protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
 	{
-		String method = request.getMethod();
+		//targetのパス取得
 		String requestPath = request.getRequestURI().substring(request.getContextPath().length());
+		//指定がない場合はindex.html
 		if(requestPath.equals("/")) requestPath = "/index.html";
+		
+		/*
+		 * このあたりでURLとのマッピング処理をする
+		 */
+		
 		requestPath = workspace + requestPath;
-
+		
+		//パスの検証、ディレクトリ・トラバーサル対策
 		File file = new File(requestPath);
 		requestPath = file.getCanonicalPath();
-
-		System.out.println("requestPath:"+requestPath);
-		if(requestPath.startsWith(workspace)){
-			loadfile(request, response,requestPath);
-		}else{
+		if(!requestPath.startsWith(workspace)){//workspaceより上位へのアクセスを防止
 			notfound(request,response);
 		}
+		
+		System.out.println("requestPath:"+requestPath);
+		
+		loadfile(request, response,requestPath);
 	}
 
+	/**
+	 * 404画面
+	 * @param request
+	 * @param response
+	 * @throws ServletException
+	 * @throws IOException
+	 */
 	private void notfound(HttpServletRequest request,
 			HttpServletResponse response)
 					throws ServletException, IOException {
@@ -47,6 +67,14 @@ public class ServletTest extends HttpServlet {
 		response.getWriter().println("File not found...");
 	}
 
+	/**
+	 * 対象ファイル返却処理
+	 * @param request
+	 * @param response
+	 * @param requestPath
+	 * @throws ServletException
+	 * @throws IOException
+	 */
 	private void loadfile(HttpServletRequest request,
 			HttpServletResponse response,String requestPath)
 					throws ServletException, IOException {
@@ -69,7 +97,6 @@ public class ServletTest extends HttpServlet {
 				// output
 				OutputStream out = response.getOutputStream();
 				int b = 0;
-
 				while ((b = is.read()) != -1) {
 					out.write(b);
 				}
@@ -83,11 +110,19 @@ public class ServletTest extends HttpServlet {
 
 	}
 
+	/**
+	 * コンテンツタイプの設定
+	 * Contentの種類検出と設定を行う
+	 * ついでにキャッシュ設定もする
+	 * @param response
+	 * @param filename
+	 * @param fileLength
+	 */
 	private void setResponseHeader(final HttpServletResponse response,
 			String filename, final int fileLength) {
 
+		//TODO context.xmlとか参照したほうが良い
 		if (filename.endsWith(".html")) {
-			// PDF
 			response.setContentType("text/html");
 		} else if (filename.endsWith(".xml")) {
 			response.setContentType("application/xml");
